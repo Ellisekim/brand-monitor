@@ -5,6 +5,9 @@ on:
     - cron: '0 */2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   monitor:
     runs-on: ubuntu-latest
@@ -31,4 +34,8 @@ jobs:
 
       - name: 결과 GitHub에 저장
         run: |
-          git config --global user.email
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add results.csv
+          git diff --staged --quiet || git commit -m "update results"
+          git push
