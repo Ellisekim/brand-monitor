@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>브랜드검색 모니터링</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #888; margin-bottom: 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: #fff; border-radius: 10px; padding: 14px; }
+  .card p { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .card span { font-size: 24px; font-weight: 500; }
+  .green { color: #16a34a; }
+  .red { color: #dc2626; }
+  .box { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .box h2 { font-size: 15px; font-weight: 500; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 0; color: #888; font-weight: 400; border-bottom: 1px solid #eee; }
+  td { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 6px; }
+  .badge.on { background: #dcfce7; color: #16a34a; }
+  .badge.off { background: #fee2e2; color: #dc2626; }
+  .alert { background: #fee2e2; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .alert p { font-size: 13px; color: #dc2626; font-weight: 500; }
+  .alert small { font-size: 12px; color: #ef4444; }
+  .status { display: inline-block; font-size: 12px; padding: 4px 12px; border-radius: 6px; background: #dcfce7; color: #16a34a; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>브랜드검색 모니터링</h1>
+    <p class="sub" id="last-run">불러오는 중...</p>
+  </div>
+  <span class="status" id="status-badge">확인 중</span>
+</div>
+
+<div class="cards">
+  <div class="card"><p>전체 키워드</p><span id="total">-</span></div>
+  <div class="card"><p>PC 노출</p><span class="green" id="pc-on">-</span></div>
+  <div class="card"><p>MO 노출</p><span class="green" id="mo-on">-</span></div>
+  <div class="card"><p>미노출</p><span class="red" id="off-count">-</span></div>
+</div>
+
+<div class="box">
+  <h2>키워드별 현황</h2>
+  <table>
+    <thead><tr><th>키워드</th><th style="text-align:center">PC</th><th style="text-align:center">MO</th><th style="text-align:right">확인시각</th></tr></thead>
+    <tbody id="keyword-table"></tbody>
+  </table>
+</div>
+
+<div class="box">
+  <h2>미노출 이력</h2>
+  <div id="alert-list"><p style="color:#888;font-size:13px">미노출 이력 없음</p></div>
+</div>
+
+<script>
+async function loadCSV() {
+  try {
+    const res = await fetch('results.csv?t=' + Date.now());
+    const text = await res.text();
+    const lines = text.trim().split('\n').slice(1);
+    const rows = lines.map(l => {
+      const parts = l.split(',');
+      return { time: parts[0], keyword: parts[1], device: parts[2], status: parts[3] };
+    }).filter(r => r.keyword);
+
+    const latest = {};
+    rows.forEach(r => {
+      const key = r.keyword + '_' + r.device;
+      if (!latest[key] || r.time > latest[key].time) latest[key] = r;
+    });
+
+    const data = Object.values(latest);
+    const keywords = [...new Set(data.map(r => r.keyword))];
+
+    document.getElementById('total').textContent = keywords.length;
+    document.getElementById('pc-on').textContent = data.filter(r => r.device === 'PC' && r.status === '노출').length;
+    document.getElementById('mo-on').textContent = data.filter(r => r.device === 'MO' && r.status === '노출').length;
+    const offCount = data.filter(r => r.status === '미노출').length;
+    document.getElementById('off-count').textContent = offCount;
+
+    const lastTime = rows[rows.length - 1]?.time || '-';
+    document.getElementById('last-run').textContent = '마지막 실행: ' + lastTime;
+    document.getElementById('status-badge').textContent = offCount > 0 ? '⚠️ 미노출 감지' : '정상 운영 중';
+    document.getElementById('status-badge').style.background = offCount > 0 ? '#fee2e2' : '#dcfce7';
+    document.getElementById('status-badge').style.color = offCount > 0 ? '#dc2626' : '#16a34a';
+
+    const tbody = document.getElementById('keyword-table');
+    tbody.innerHTML = keywords.map(kw => {
+      const pc = data.find(r => r.keyword === kw && r.device === 'PC');
+      const mo = data.find(r => r.keyword === kw && r.device === 'MO');
+      const pcBadge = pc ? `<span class="badge ${pc.status === '노출' ? 'on' : 'off'}">${pc.status}</span>` : '-';
+      const moBadge = mo ? `<span class="badge ${mo.status === '노출' ? 'on' : 'off'}">${mo.status}</span>` : '-';
+      const time = (pc?.time || mo?.time || '').split(' ')[1] || '-';
+      return `<tr><td>${kw}</td><td style="text-align:center">${pcBadge}</td><td style="text-align:center">${moBadge}</td><td style="text-align:right;color:#888">${time}</td></tr>`;
+    }).join('');
+
+    const alerts = rows.filter(r => r.status === '미노출').slice(-10).reverse();
+    const alertList = document.getElementById('alert-list');
+    if (alerts.length > 0) {
+      alertList.innerHTML = alerts.map(r =>
+        `<div class="alert"><p>${r.keyword} — ${r.device} 미노출</p><small>${r.time}</small></div>`
+      ).join('');
+    }
+  } catch(e) {
+    document.getElementById('last-run').textContent = '데이터 불러오기 실패';
+  }
+}
+loadCSV();
+</script>
+</body>
+</html>
