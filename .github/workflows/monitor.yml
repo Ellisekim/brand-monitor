@@ -28,3 +28,10 @@ jobs:
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         run: python monitor.py
+        - name: 결과 GitHub에 저장
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add results.csv
+          git diff --staged --quiet || git commit -m "update results"
+          git push
