@@ -1,0 +1,30 @@
+name: Brand Search Monitor
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # 2시간마다 실행
+  workflow_dispatch:         # 수동 실행도 가능
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Python 설치
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: 모니터링 실행
+        env:
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+        run: python monitor.py
