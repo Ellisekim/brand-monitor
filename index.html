@@ -70,10 +70,8 @@ async function loadCSV() {
     const lines = text.trim().split('\n');
     const currentLastLine = lines[lines.length - 1];
 
-    if (currentLastLine === lastLine) return;
-    lastLine = currentLastLine;
-
-    const rows = lines.slice(1).map(l => {
+    
+        const rows = lines.slice(1).map(l => {
       const parts = l.split(',');
       return { time: parts[0], keyword: parts[1], device: parts[2], status: parts[3] };
     }).filter(r => r.keyword);
