@@ -120,7 +120,10 @@ async function loadCSV() {
 }
 
 loadCSV();
-setInterval(loadCSV, 1800000);
+setInterval(() => {
+  loadCSV();
+  document.getElementById('last-run').textContent = '마지막 갱신: ' + new Date().toLocaleString('ko-KR');
+}, 1800000);
 </script>
 </body>
 </html>
