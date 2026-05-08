@@ -65,7 +65,7 @@ let lastLine = '';
 
 async function loadCSV() {
   try {
-    const res = await fetch('results.csv?t=' + Date.now());
+    const res = await fetch('https://raw.githubusercontent.com/Ellisekim/brand-monitor/main/results.csv?t=' + Date.now());
     const text = await res.text();
     const lines = text.trim().split('\n');
     const currentLastLine = lines[lines.length - 1];
