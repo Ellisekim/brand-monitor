@@ -1,12 +1,10 @@
-import os
-from datetime import datetime, timezone, timedelta
-
-KST = timezone(timedelta(hours=9))
 import csv, os, smtplib
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from playwright.sync_api import sync_playwright
+
+KST = timezone(timedelta(hours=9))
 
 KEYWORDS_FILE = "keywords.txt"
 RESULTS_FILE  = "results.csv"
@@ -55,38 +53,30 @@ https://search.naver.com/search.naver?query={keyword}
 def check_brand_search(page, keyword, device):
     url = f"https://search.naver.com/search.naver?query={keyword}"
     page.goto(url, wait_until="networkidle")
-
     selector = ".brand_search, #brand_block, [class*='brand_']"
-    exposed =  page.locator(selector).count() > 0
-
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    exposed = page.locator(selector).count() > 0
+    ts = datetime.now(KST).strftime("%Y%m%d_%H%M%S")
     status = "exposed" if exposed else "not_exposed"
     shot_path = f"{SCREENSHOT_DIR}/{keyword}_{device}_{status}_{ts}.png"
     page.screenshot(path=shot_path, full_page=False)
-
     return exposed, shot_path
 
 def save_result(keyword, device, exposed, shot_path):
     checked_at = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
     status = "노출" if exposed else "미노출"
-
     write_header = not os.path.exists(RESULTS_FILE)
     with open(RESULTS_FILE, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         if write_header:
             writer.writerow(["checked_at", "keyword", "device", "status", "screenshot"])
         writer.writerow([checked_at, keyword, device, status, shot_path])
-
     print(f"[{checked_at}] [{device}] {keyword} → {status}")
-
     if not exposed:
         send_alert(keyword, device, checked_at)
 
 def run():
     keywords = load_keywords()
     with sync_playwright() as p:
-
-        # PC 체크
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         for keyword in keywords:
@@ -97,7 +87,6 @@ def run():
                 print(f"[오류][PC] {keyword}: {e}")
         browser.close()
 
-        # MO 체크
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
             user_agent=MOBILE_UA,
