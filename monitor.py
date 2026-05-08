@@ -1,3 +1,7 @@
+import os
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 import csv, os, smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
@@ -63,7 +67,7 @@ def check_brand_search(page, keyword, device):
     return exposed, shot_path
 
 def save_result(keyword, device, exposed, shot_path):
-    checked_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    checked_at = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
     status = "노출" if exposed else "미노출"
 
     write_header = not os.path.exists(RESULTS_FILE)
