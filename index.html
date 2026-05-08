@@ -92,7 +92,6 @@ async function loadCSV() {
     document.getElementById('off-count').textContent = offCount;
 
     const lastTime = rows[rows.length - 1]?.time || '-';
-    document.getElementById('last-run').textContent = '마지막 실행: ' + lastTime;
     document.getElementById('status-badge').textContent = offCount > 0 ? '⚠️ 미노출 감지' : '정상 운영 중';
     document.getElementById('status-badge').style.background = offCount > 0 ? '#fee2e2' : '#dcfce7';
     document.getElementById('status-badge').style.color = offCount > 0 ? '#dc2626' : '#16a34a';
