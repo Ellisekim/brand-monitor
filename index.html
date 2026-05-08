@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="3600">
 <title>브랜드검색 모니터링</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -62,12 +61,19 @@
 </div>
 
 <script>
+let lastLine = '';
+
 async function loadCSV() {
   try {
     const res = await fetch('results.csv?t=' + Date.now());
     const text = await res.text();
-    const lines = text.trim().split('\n').slice(1);
-    const rows = lines.map(l => {
+    const lines = text.trim().split('\n');
+    const currentLastLine = lines[lines.length - 1];
+
+    if (currentLastLine === lastLine) return;
+    lastLine = currentLastLine;
+
+    const rows = lines.slice(1).map(l => {
       const parts = l.split(',');
       return { time: parts[0], keyword: parts[1], device: parts[2], status: parts[3] };
     }).filter(r => r.keyword);
@@ -114,7 +120,9 @@ async function loadCSV() {
     document.getElementById('last-run').textContent = '데이터 불러오기 실패';
   }
 }
+
 loadCSV();
+setInterval(loadCSV, 1800000);
 </script>
 </body>
 </html>
